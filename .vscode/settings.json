@@ -1,0 +1,32 @@
+{
+  "typescript.preferences.importModuleSpecifier": "relative",
+  "typescript.suggest.autoImports": true,
+  "editor.formatOnSave": true,
+  "editor.codeActionsOnSave": {
+    "source.fixAll.eslint": "explicit",
+    "source.organizeImports": "explicit"
+  },
+  "files.associations": {
+    "*.tsx": "typescriptreact",
+    "*.ts": "typescript"
+  },
+  "emmet.includeLanguages": {
+    "typescriptreact": "html"
+  },
+  "editor.snippetSuggestions": "top",
+  "editor.suggest.snippetsPreventQuickSuggestions": false,
+  "workbench.colorCustomizations": {
+    "activityBar.background": "#FF5722",
+    "activityBar.foreground": "#ffffff"
+  },
+  "files.exclude": {
+    "node_modules": true,
+    ".expo": true,
+    "dist": true
+  },
+  "search.exclude": {
+    "node_modules": true,
+    ".expo": true,
+    "dist": true
+  }
+}
