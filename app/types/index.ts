@@ -56,6 +56,7 @@ export interface Location {
     email?: string;
     idType?: string;
     idNumber?: string;
+    seatNumber?: string;
   }
   
   export interface User {
@@ -68,8 +69,9 @@ export interface Location {
   
   export interface PaymentMethod {
     id: string;
-    userId: string;
+    userId?: string;  // Made optional with '?'
     type: 'card' | 'mobile_money' | 'bank';
+    name?: string;
     cardNumber?: string;
     cardType?: string;
     expiryDate?: string;

@@ -1,18 +1,40 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Tabs } from 'expo-router';
 import { 
   Home, 
   Bus, 
   ClipboardList, 
-  User
+  User,
+  Settings
 } from 'lucide-react-native';
 import colors from '@/constants/colors';
 import { useAppStore } from '@/store/app-store';
+import { supabase } from '@/app/lib/supabase-client';
 
 export default function TabsLayout() {
   const { settings } = useAppStore();
+  const [isAdmin, setIsAdmin] = useState(false);
   const theme = settings.theme;
   const themeColors = colors[theme];
+
+  useEffect(() => {
+    const checkAdmin = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        const { data, error } = await supabase
+          .from('profiles')
+          .select('is_admin')
+          .eq('id', user.id)
+          .single();
+        
+        if (data?.is_admin) {
+          setIsAdmin(true);
+        }
+      }
+    };
+
+    checkAdmin();
+  }, []);
 
   return (
     <Tabs
@@ -72,6 +94,8 @@ export default function TabsLayout() {
           headerTitle: 'My Profile',
         }}
       />
+  const theme = settings.theme;
+  const themeColors = colors[theme];
     </Tabs>
   );
 }

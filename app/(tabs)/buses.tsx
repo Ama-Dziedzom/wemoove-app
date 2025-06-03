@@ -34,7 +34,7 @@ import { useBookingStore } from '@/store/booking-store';
 import { useCurrency } from '@/hooks/useCurrency';
 import { useLocations } from '@/hooks/useLocations';
 import BusCard from '@/components/BusCard';
-import { Bus, Location } from '@/types';
+import { Bus, Location } from '@/app/types';
 import Input from '@/components/Input';
 
 // Define style types

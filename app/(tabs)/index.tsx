@@ -31,7 +31,7 @@ import { useLocations } from '@/hooks/useLocations';
 import Button from '@/components/Button';
 import Input from '@/components/Input';
 import BusCard from '@/components/BusCard';
-import { Bus as BusType } from '@/types';
+import { Bus as BusType } from '@/app/types';
 import DateTimePicker from '@react-native-community/datetimepicker';
 
 export default function HomeScreen() {
@@ -515,18 +515,19 @@ function getTimeOfDay() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: 'red',
   },
   scrollContent: {
     padding: 16,
     paddingTop: 8, // Reduced top padding to move title up
   },
   header: {
-    marginBottom: 16, // Reduced from 20 to move title up further
+    marginBottom: 20, // Reduced from 20 to move title up further
   },
   greeting: {
     fontSize: 24,
     fontWeight: 'bold',
-    marginBottom: 2, // Reduced from 4 to move title up
+    marginBottom: 4, // Reduced from 4 to move title up
   },
   subtitle: {
     fontSize: 16,

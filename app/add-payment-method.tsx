@@ -19,7 +19,7 @@ import colors from '@/constants/colors';
 import { useAppStore } from '@/store/app-store';
 import Button from '@/components/Button';
 import Input from '@/components/Input';
-import { PaymentMethod } from '@/types';
+import { PaymentMethod } from '@/app/types';
 
 export default function AddPaymentMethodScreen() {
   const [selectedType, setSelectedType] = useState<'card' | 'mobile_money' | 'bank'>('card');

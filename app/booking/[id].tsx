@@ -27,7 +27,7 @@ import { useCurrency } from '@/hooks/useCurrency';
 import Button from '@/components/Button';
 import SeatSelection from '@/components/SeatSelection';
 import Input from '@/components/Input';
-import { Passenger } from '@/types';
+import { Passenger } from '@/app/types';
 
 export default function BookingDetailsScreen() {
   const { id } = useLocalSearchParams();

@@ -1,5 +1,5 @@
-import { supabase } from '@/lib/supabase';
-import { Location, Bus, SeatAvailability, PaymentMethod, Notification } from '@/types';
+import { supabase } from '@/app/lib/supabase-client';
+import { Location, Bus, SeatAvailability, PaymentMethod, Notification } from '@/app/types';
 
 // API endpoints (keeping these for reference or future use)
 const BASE_URL = 'https://x8ki-letl-twmt.n7.xano.io/api:cvxqMt6B';
