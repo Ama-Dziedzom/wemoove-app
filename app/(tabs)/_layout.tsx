@@ -1,43 +1,75 @@
-import { Tabs } from 'expo-router';
 import React from 'react';
-import { Platform } from 'react-native';
+import { Tabs } from 'expo-router';
+import { 
+  Home, 
+  Bus, 
+  ClipboardList, 
+  User
+} from 'lucide-react-native';
+import colors from '@/constants/colors';
+import { useAppStore } from '@/store/app-store';
 
-import { HapticTab } from '@/components/HapticTab';
-import { IconSymbol } from '@/components/ui/IconSymbol';
-import TabBarBackground from '@/components/ui/TabBarBackground';
-import { Colors } from '@/constants/Colors';
-import { useColorScheme } from '@/hooks/useColorScheme';
-
-export default function TabLayout() {
-  const colorScheme = useColorScheme();
+export default function TabsLayout() {
+  const { settings } = useAppStore();
+  const theme = settings.theme;
+  const themeColors = colors[theme];
 
   return (
     <Tabs
       screenOptions={{
-        tabBarActiveTintColor: Colors[colorScheme ?? 'light'].tint,
-        headerShown: false,
-        tabBarButton: HapticTab,
-        tabBarBackground: TabBarBackground,
-        tabBarStyle: Platform.select({
-          ios: {
-            // Use a transparent background on iOS to show the blur effect
-            position: 'absolute',
-          },
-          default: {},
-        }),
-      }}>
+        tabBarActiveTintColor: themeColors.primary,
+        tabBarInactiveTintColor: themeColors.inactive,
+        tabBarStyle: {
+          backgroundColor: themeColors.card,
+          borderTopColor: themeColors.border,
+        },
+        tabBarLabelStyle: {
+          fontSize: 12,
+        },
+        headerStyle: {
+          backgroundColor: themeColors.card,
+        },
+        headerTintColor: themeColors.text,
+      }}
+    >
       <Tabs.Screen
         name="index"
         options={{
           title: 'Home',
-          tabBarIcon: ({ color }) => <IconSymbol size={28} name="house.fill" color={color} />,
+          tabBarIcon: ({ color, size }) => (
+            <Home size={size} color={color} />
+          ),
+          headerTitle: 'wemoove',
         }}
       />
       <Tabs.Screen
-        name="explore"
+        name="buses"
         options={{
-          title: 'Explore',
-          tabBarIcon: ({ color }) => <IconSymbol size={28} name="paperplane.fill" color={color} />,
+          title: 'Buses',
+          tabBarIcon: ({ color, size }) => (
+            <Bus size={size} color={color} />
+          ),
+          headerTitle: 'Find Buses',
+        }}
+      />
+      <Tabs.Screen
+        name="history"
+        options={{
+          title: 'History',
+          tabBarIcon: ({ color, size }) => (
+            <ClipboardList size={size} color={color} />
+          ),
+          headerTitle: 'My Bookings',
+        }}
+      />
+      <Tabs.Screen
+        name="profile"
+        options={{
+          title: 'Profile',
+          tabBarIcon: ({ color, size }) => (
+            <User size={size} color={color} />
+          ),
+          headerTitle: 'My Profile',
         }}
       />
     </Tabs>
