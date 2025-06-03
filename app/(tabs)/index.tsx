@@ -8,9 +8,10 @@ import {
   ActivityIndicator,
   Platform,
   Modal,
-  RefreshControl
+  RefreshControl,
+  SafeAreaView as SafeAreaViewRN
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+// Using SafeAreaView from react-native for better compatibility
 import { useRouter } from 'expo-router';
 import { 
   Search, 
@@ -21,18 +22,66 @@ import {
   ArrowLeftRight,
   Bus,
   RefreshCw,
-  X
+  X,
+  TrendingUp
 } from 'lucide-react-native';
+import { supabase } from '@/app/lib/supabase-client';
 import colors from '@/constants/colors';
 import { useAppStore } from '@/store/app-store';
+import { useAuthStore } from '@/store/auth-store';
 import { useBookingStore } from '@/store/booking-store';
 import { useCurrency } from '@/hooks/useCurrency';
 import { useLocations } from '@/hooks/useLocations';
 import Button from '@/components/Button';
 import Input from '@/components/Input';
 import BusCard from '@/components/BusCard';
-import { Bus as BusType } from '@/app/types';
+import { Bus as BusType, User } from '@/app/types';
 import DateTimePicker from '@react-native-community/datetimepicker';
+
+// Styles will be defined at the bottom of the file
+
+// Define the theme colors
+const lightTheme = {
+  primary: colors.light.primary,
+  secondary: colors.light.secondary,
+  background: colors.light.background,
+  backgroundSecondary: colors.light.backgroundSecondary,
+  card: colors.light.card,
+  text: colors.light.text,
+  subtext: colors.light.subtext,
+  border: colors.light.border,
+  inactive: colors.light.inactive,
+  success: colors.light.success,
+  error: colors.light.error,
+  warning: colors.light.warning,
+  info: colors.light.info,
+  white: colors.light.white
+};
+
+const darkTheme = {
+  primary: colors.dark.primary,
+  secondary: colors.dark.secondary,
+  background: colors.dark.background,
+  backgroundSecondary: colors.dark.backgroundSecondary,
+  card: colors.dark.card,
+  text: colors.dark.text,
+  subtext: colors.dark.subtext,
+  border: colors.dark.border,
+  inactive: colors.dark.inactive,
+  success: colors.dark.success,
+  error: colors.dark.error,
+  warning: colors.dark.warning,
+  info: colors.dark.info,
+  white: colors.dark.white
+};
+
+// Helper function to get time of day
+function getTimeOfDay() {
+  const hour = new Date().getHours();
+  if (hour < 12) return 'morning';
+  if (hour < 18) return 'afternoon';
+  return 'evening';
+}
 
 export default function HomeScreen() {
   const [from, setFrom] = useState('');
@@ -44,6 +93,7 @@ export default function HomeScreen() {
   const [refreshing, setRefreshing] = useState(false);
   
   const { settings } = useAppStore();
+  const { user } = useAuthStore();
   const { 
     searchResults, 
     isLoading, 
@@ -135,13 +185,42 @@ export default function HomeScreen() {
     setRefreshing(false);
   }, [refreshLocations, searchBuses, showSearchResults]);
 
-  // Fetch popular routes from API on component mount
-  const [popularRoutes, setPopularRoutes] = useState([
-    { from: 'New York', to: 'Boston', price: 45 },
-    { from: 'Los Angeles', to: 'San Francisco', price: 55 },
-    { from: 'Chicago', to: 'Detroit', price: 40 },
-    { from: 'Miami', to: 'Orlando', price: 35 }
-  ]);
+  // State for popular routes
+  const [popularRoutes, setPopularRoutes] = useState<Array<{
+    departure_location: string;
+    arrival_location: string;
+    booking_count: number;
+    avg_price: number;
+  }>>([]);
+  const [loadingPopularRoutes, setLoadingPopularRoutes] = useState(true);
+
+  // Fetch popular routes from Supabase
+  const fetchPopularRoutes = useCallback(async () => {
+    try {
+      setLoadingPopularRoutes(true);
+      const { data, error } = await supabase
+        .from('popular_routes')
+        .select('*')
+        .order('booking_count', { ascending: false })
+        .limit(5);
+
+      if (error) {
+        console.error('Error fetching popular routes:', error);
+        return;
+      }
+
+      setPopularRoutes(data || []);
+    } catch (error) {
+      console.error('Error in fetchPopularRoutes:', error);
+    } finally {
+      setLoadingPopularRoutes(false);
+    }
+  }, []);
+
+  // Fetch popular routes on component mount
+  useEffect(() => {
+    fetchPopularRoutes();
+  }, [fetchPopularRoutes]);
 
   // Fetch featured buses on component mount
   const [featuredBuses, setFeaturedBuses] = useState<BusType[]>([]);
@@ -177,9 +256,12 @@ export default function HomeScreen() {
   };
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: themeColors.background }]}>
-      <ScrollView 
-        contentContainerStyle={styles.scrollContent}
+    <SafeAreaViewRN style={{ flex: 1, backgroundColor: themeColors.background }}>
+      <ScrollView
+        style={{
+          padding: 16,
+          paddingTop: 8, // Reduced top padding to move title up
+        }}
         refreshControl={
           <RefreshControl
             refreshing={refreshing}
@@ -189,11 +271,19 @@ export default function HomeScreen() {
           />
         }
       >
-        <View style={styles.header}>
-          <Text style={[styles.greeting, { color: themeColors.text }]}>
-            Good {getTimeOfDay()}
+        <View style={{ marginBottom: 20 }}>
+          <Text style={{ 
+            fontSize: 24,
+            fontWeight: 'bold',
+            color: themeColors.text,
+            marginBottom: 4
+          }}>
+            Good {getTimeOfDay()}{user ? `, ${(user as any).user_metadata?.name || user.email?.split('@')[0]}` : ''}!
           </Text>
-          <Text style={[styles.subtitle, { color: themeColors.subtext }]}>
+          <Text style={{ 
+            fontSize: 16,
+            color: themeColors.subtext 
+          }}>
             Where are you going today?
           </Text>
         </View>
@@ -348,56 +438,160 @@ export default function HomeScreen() {
               </View>
             )}
           </View>
-        ) : (
-          <>
-            <View style={styles.sectionHeader}>
-              <Text style={[styles.sectionTitle, { color: themeColors.text }]}>
-                Popular Routes
+  ) : (
+    <View>
+      <Text style={[styles.sectionTitle, { color: themeColors.text, marginBottom: 12 }]}>
+        Or check out these popular routes
+      </Text>
+      {loadingFeatured ? (
+        <ActivityIndicator size="large" color={themeColors.primary} />
+      ) : featuredBuses.length > 0 ? (
+        featuredBuses.map(bus => (
+          <BusCard
+            key={`featured-${bus.id}`}
+            bus={bus}
+            onPress={() => handleSelectBus(bus)}
+          />
+        ))
+      ) : (
+        <Text style={{ color: themeColors.subtext, textAlign: 'center' }}>
+          No featured routes available at the moment.
+        </Text>
+      )}
+    </View>
+  )}
+        
+        {/* Popular Routes Section */}
+        <View style={{ marginTop: 24, marginBottom: 16 }}>
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+            <Text style={[styles.sectionTitle, { color: themeColors.text }]}>Popular Routes</Text>
+            <TouchableOpacity onPress={fetchPopularRoutes} disabled={loadingPopularRoutes}>
+              <Text style={[styles.seeAllText, { color: themeColors.primary }]}>
+                {loadingPopularRoutes ? 'Loading...' : 'See All'}
               </Text>
-              <TouchableOpacity onPress={() => router.push('/buses')}>
-                <Text style={[styles.seeAllText, { color: themeColors.primary }]}>
-                  See All
-                </Text>
-              </TouchableOpacity>
+            </TouchableOpacity>
+          </View>
+
+          {loadingPopularRoutes ? (
+            <View style={{ flexDirection: 'row', paddingVertical: 8 }}>
+              {[1, 2, 3].map((i) => (
+                <View 
+                  key={i} 
+                  style={{ 
+                    backgroundColor: themeColors.card, 
+                    borderColor: themeColors.border, 
+                    borderWidth: 1,
+                    borderRadius: 12,
+                    padding: 16,
+                    marginRight: 12,
+                    minWidth: 200,
+                    opacity: 0.7 
+                  }}
+                >
+                  <View style={{ width: 120, height: 20, backgroundColor: themeColors.border, borderRadius: 8, marginBottom: 8 }} />
+                  <View style={{ width: 80, height: 16, backgroundColor: themeColors.border, borderRadius: 4 }} />
+                </View>
+              ))}
             </View>
-            
+          ) : popularRoutes.length > 0 ? (
             <ScrollView 
               horizontal 
-              showsHorizontalScrollIndicator={false}
-              contentContainerStyle={styles.popularRoutesContainer}
+              showsHorizontalScrollIndicator={false} 
+              contentContainerStyle={{ paddingVertical: 4 }}
             >
               {popularRoutes.map((route, index) => (
                 <TouchableOpacity 
-                  key={index}
-                  style={[styles.popularRouteCard, { 
+                  key={`${route.departure_location}-${route.arrival_location}-${index}`}
+                  style={{
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    padding: 16,
+                    borderRadius: 12,
+                    marginRight: 12,
+                    minWidth: 200,
                     backgroundColor: themeColors.card,
-                    borderColor: themeColors.border
-                  }]}
+                    borderWidth: 1,
+                    borderColor: themeColors.border,
+                    shadowColor: '#000',
+                    shadowOffset: { width: 0, height: 2 },
+                    shadowOpacity: 0.1,
+                    shadowRadius: 4,
+                    elevation: 2,
+                  }}
                   onPress={() => {
-                    setFrom(route.from);
-                    setTo(route.to);
+                    setFrom(route.departure_location);
+                    setTo(route.arrival_location);
+                    setSearchParams(route.departure_location, route.arrival_location, date.toISOString().split('T')[0], passengers);
+                    searchBuses();
+                    setShowSearchResults(true);
                   }}
                 >
-                  <View style={styles.routeInfo}>
-                    <Text style={[styles.routePrice, { color: themeColors.primary }]}>
-                      {formatCurrency(route.price)}
-                    </Text>
-                    <Text style={[styles.routeText, { color: themeColors.text }]}>
-                      {route.from} to {route.to}
-                    </Text>
+                  <View style={{ flex: 1 }}>
+                    <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                      <Text style={{
+                        fontWeight: '600',
+                        color: themeColors.text,
+                        fontSize: 16,
+                      }}>
+                        {route.departure_location.split(' ').map(word => word[0]).join('').toUpperCase()}
+                      </Text>
+                      <View style={{ marginHorizontal: 8 }}>
+                        <ArrowRight size={16} color={themeColors.primary} />
+                      </View>
+                      <Text style={{
+                        fontWeight: '600',
+                        color: themeColors.text,
+                        fontSize: 16,
+                      }}>
+                        {route.arrival_location.split(' ').map(word => word[0]).join('').toUpperCase()}
+                      </Text>
+                    </View>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 8 }}>
+                      <Text style={{
+                        color: themeColors.primary,
+                        fontSize: 18,
+                        fontWeight: '700',
+                      }}>
+                        {formatCurrency(route.avg_price || 0)}
+                      </Text>
+                    </View>
                   </View>
-                  <ArrowRight size={16} color={themeColors.primary} />
+                  <View style={{
+                    width: 32,
+                    height: 32,
+                    borderRadius: 16,
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    backgroundColor: themeColors.primary + '20',
+                  }}>
+                    <ArrowRight size={20} color={themeColors.primary} />
+                  </View>
                 </TouchableOpacity>
               ))}
             </ScrollView>
-            
-            <View style={styles.sectionHeader}>
-              <Text style={[styles.sectionTitle, { color: themeColors.text }]}>
-                Featured Buses
+          ) : (
+            <View style={{ paddingVertical: 16 }}>
+              <Text style={{
+                textAlign: 'center',
+                color: themeColors.text,
+                fontSize: 14,
+              }}>
+                No popular routes available
               </Text>
             </View>
-            
-            {loadingFeatured ? (
+          )}
+        </View>
+        
+        {/* Featured Buses Section */}
+        <View style={{ marginTop: 24, marginBottom: 16 }}>
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+            <Text style={[styles.sectionTitle, { color: themeColors.text }]}>
+              Featured Buses
+            </Text>
+          </View>
+          
+          {loadingFeatured ? (
               <View style={styles.loadingContainer}>
                 <ActivityIndicator size="small" color={themeColors.primary} />
                 <Text style={[styles.loadingText, { color: themeColors.subtext }]}>
@@ -424,7 +618,10 @@ export default function HomeScreen() {
                 </Text>
               </View>
             )}
-            
+          </View>
+          
+          {/* Promo Card Section */}
+          <View style={{ marginTop: 24, marginBottom: 16 }}>
             <View style={[styles.promoCard, { backgroundColor: themeColors.primary }]}>
               <View style={styles.promoContent}>
                 <Text style={styles.promoTitle}>
@@ -452,70 +649,78 @@ export default function HomeScreen() {
                 <Bus size={80} color="#FFFFFF" style={styles.promoImage} />
               </View>
             </View>
-          </>
-        )}
-      </ScrollView>
-
-      {/* Date Picker for iOS */}
-      {Platform.OS === 'ios' && showDatePicker && (
-        <Modal
-          transparent={true}
-          animationType="slide"
-          visible={showDatePicker}
-          onRequestClose={closeDatePicker}
-        >
-          <View style={styles.modalContainer}>
-            <View style={[styles.modalContent, { backgroundColor: themeColors.card }]}>
-              <View style={styles.modalHeader}>
-                <Text style={[styles.modalTitle, { color: themeColors.text }]}>Select Date</Text>
-                <TouchableOpacity onPress={closeDatePicker}>
-                  <X size={24} color={themeColors.text} />
-                </TouchableOpacity>
-              </View>
-              <DateTimePicker
-                value={date}
-                mode="date"
-                display="spinner"
-                onChange={handleDateChange}
-                minimumDate={new Date()}
-                textColor={theme === 'dark' ? "#FFFFFF" : "#000000"}
-                style={{ backgroundColor: 'transparent' }}
-              />
-              <Button
-                title="Confirm"
-                onPress={closeDatePicker}
-                style={styles.confirmButton}
-              />
-            </View>
           </View>
-        </Modal>
-      )}
 
-      {/* Date Picker for Android */}
-      {Platform.OS === 'android' && showDatePicker && (
-        <DateTimePicker
-          value={date}
-          mode="date"
-          display="default"
-          onChange={handleDateChange}
-          minimumDate={new Date()}
-        />
-      )}
-    </SafeAreaView>
-  );
-}
-
-function getTimeOfDay() {
-  const hour = new Date().getHours();
-  if (hour < 12) return 'morning';
-  if (hour < 18) return 'afternoon';
-  return 'evening';
-}
+        {/* Date Pickers */}
+        {Platform.OS === 'ios' && showDatePicker && (
+          <Modal
+            transparent={true}
+            animationType="slide"
+            visible={showDatePicker}
+            onRequestClose={closeDatePicker}
+          >
+            <View style={{
+              flex: 1,
+              justifyContent: 'flex-end',
+              backgroundColor: 'rgba(0, 0, 0, 0.5)',
+            }}>
+              <View style={{
+                borderTopLeftRadius: 20,
+                borderTopRightRadius: 20,
+                padding: 20,
+                backgroundColor: themeColors.card,
+              }}>
+                <View style={{
+                  flexDirection: 'row',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  marginBottom: 20,
+                }}>
+                  <Text style={{
+                    fontSize: 18,
+                    fontWeight: 'bold',
+                    color: themeColors.text,
+                  }}>Select Date</Text>
+                  <TouchableOpacity onPress={closeDatePicker}>
+                    <X size={24} color={themeColors.text} />
+                  </TouchableOpacity>
+                </View>
+                <DateTimePicker
+                  value={date}
+                  mode="date"
+                  display="spinner"
+                  onChange={handleDateChange}
+                  minimumDate={new Date()}
+                  textColor={theme === 'dark' ? "#FFFFFF" : "#000000"}
+                  style={{ backgroundColor: 'transparent' }}
+                />
+                <Button
+                  title="Confirm"
+                  onPress={closeDatePicker}
+                  style={{ marginTop: 16 }}
+                />
+              </View>
+            </View>
+          </Modal>
+        )}
+        {/* Date Picker for Android */}
+        {Platform.OS === 'android' && showDatePicker && (
+          <DateTimePicker
+            value={date}
+            mode="date"
+            display="default"
+            onChange={handleDateChange}
+            minimumDate={new Date()}
+          />
+        )}
+        </ScrollView>
+      </SafeAreaViewRN>
+    );
+  }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: 'red',
   },
   scrollContent: {
     padding: 16,
@@ -686,7 +891,38 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     marginBottom: 16,
-    marginTop: 8,
+  },
+  sectionTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  sectionIcon: {
+    marginRight: 8,
+  },
+  loadingIndicator: {
+    marginVertical: 16,
+  },
+  routeFrom: {
+    fontWeight: '600',
+    marginRight: 4,
+  },
+  routeTo: {
+    fontWeight: '600',
+    marginLeft: 4,
+  },
+  routeMeta: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 4,
+  },
+  bookingCount: {
+    fontSize: 12,
+    marginRight: 8,
+  },
+  noResults: {
+    textAlign: 'center',
+    marginVertical: 16,
+    fontSize: 14,
   },
   sectionTitle: {
     fontSize: 18,

@@ -65,6 +65,9 @@ export interface Location {
     email: string;
     phone: string;
     avatar?: string;
+    user_metadata?: {
+      [key: string]: any;
+    };
   }
   
   export interface PaymentMethod {

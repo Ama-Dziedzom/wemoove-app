@@ -119,7 +119,7 @@ export default function LoginScreen() {
         <ScrollView contentContainerStyle={styles.scrollContent}>
           <View style={styles.header}>
             <Image
-              source={{ uri: 'https://cdn-icons-png.flaticon.com/512/5087/5087579.png' }}
+              source={require('@/assets/images/splash-icon.png')}
               style={styles.logo}
             />
             <Text style={[styles.title, { color: themeColors.text }]}>
@@ -264,7 +264,7 @@ const styles = StyleSheet.create({
     marginBottom: 40,
   },
   logo: {
-    width: 80,
+    width: '80%',
     height: 80,
     marginBottom: 16,
   },

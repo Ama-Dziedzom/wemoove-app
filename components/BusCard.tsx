@@ -4,7 +4,7 @@ import { Star, Clock, Wifi, Power, AirVent, Armchair, Toilet } from 'lucide-reac
 import colors from '@/constants/colors';
 import { useAppStore } from '@/store/app-store';
 import { useCurrency } from '@/hooks/useCurrency';
-import { Bus } from '@/types';
+import { Bus } from '@/app/types';
 
 interface BusCardProps {
   bus: Bus;
@@ -111,7 +111,6 @@ const BusCard: React.FC<BusCardProps> = ({ bus, onPress }) => {
         </View>
         
         <View style={styles.durationContainer}>
-          <View style={[styles.durationLine, { backgroundColor: themeColors.border }]} />
           <View style={styles.durationTextContainer}>
             <Clock size={12} color={themeColors.subtext} />
             <Text style={[styles.durationText, { color: themeColors.subtext }]}>
@@ -131,7 +130,7 @@ const BusCard: React.FC<BusCardProps> = ({ bus, onPress }) => {
       </View>
       
       <View style={styles.amenitiesContainer}>
-        {visibleAmenities.map((amenity, index) => (
+        {visibleAmenities.map((amenity: string, index: number) => (
           <View key={index} style={styles.amenityItem}>
             {renderAmenityIcon(amenity)}
             <Text style={[styles.amenityText, { color: themeColors.subtext }]}>

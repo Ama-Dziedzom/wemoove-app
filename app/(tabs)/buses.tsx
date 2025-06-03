@@ -160,10 +160,32 @@ export default function BusesScreen() {
   );
 
   // Handle refresh
-  const handleRefresh = useCallback(() => {
+  const handleRefresh = useCallback(async () => {
     setRefreshing(true);
-    searchBuses().finally(() => setRefreshing(false));
-  }, [searchBuses]);
+    try {
+      // Use the current 'fromLocation' and 'toLocation' from the component's state.
+      // Assuming 'today's date' and '1 passenger' are the intended parameters for a refresh,
+      // consistent with how handleSearch and the initial load behave.
+      // If the date and passenger count can vary based on user input and should be preserved
+      // during refresh, they would need to be sourced from corresponding state variables.
+      const currentDate = new Date().toISOString().split('T')[0];
+      const currentPassengers = 1; // Adjust if passenger count is dynamic and stored in state
+
+      // Update the search parameters in the booking store to reflect the current UI selections
+      // for 'from' and 'to' locations, along with date and passenger count.
+      setSearchParams(fromLocation, toLocation, currentDate, currentPassengers);
+      
+      // Perform the search. The searchBuses function will now use the updated parameters
+      // from the store.
+      await searchBuses();
+    } catch (err) {
+      // It's good practice to log errors or handle them in the UI if necessary.
+      console.error('Failed to refresh buses:', err);
+      // Example: setErrorState("Failed to refresh. Please try again.");
+    } finally {
+      setRefreshing(false);
+    }
+  }, [searchBuses, setSearchParams, fromLocation, toLocation]); // Updated dependencies
 
   // Reset all filters
   const resetFilters = () => {

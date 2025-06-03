@@ -121,10 +121,10 @@ export default function ProfileScreen() {
             
             <View style={styles.profileInfo}>
               <Text style={[styles.userName, { color: themeColors.text }]}>
-                {user?.name || 'User Name'}
+                {user?.name || 'Ama Dziedzom'}
               </Text>
               <Text style={[styles.userPhone, { color: themeColors.subtext }]}>
-                {user?.phone || '+1 234 567 8900'}
+                {user?.phone || '0548902177'}
               </Text>
             </View>
           </View>
