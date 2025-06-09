@@ -1,42 +1,41 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { 
-  View, 
-  Text, 
-  StyleSheet, 
-  ScrollView, 
-  TouchableOpacity, 
+import React, { useCallback, useEffect, useState } from 'react';
+import {
   ActivityIndicator,
-  Platform,
   Modal,
+  Platform,
   RefreshControl,
-  SafeAreaView as SafeAreaViewRN
+  SafeAreaView as SafeAreaViewRN,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View
 } from 'react-native';
 // Using SafeAreaView from react-native for better compatibility
-import { useRouter } from 'expo-router';
-import { 
-  Search, 
-  MapPin, 
-  Calendar, 
-  Users, 
-  ArrowRight,
-  ArrowLeftRight,
-  Bus,
-  RefreshCw,
-  X,
-  TrendingUp
-} from 'lucide-react-native';
 import { supabase } from '@/app/lib/supabase-client';
+import { Bus as BusType } from '@/app/types';
+import BusCard from '@/components/BusCard';
+import Button from '@/components/Button';
+import Input from '@/components/Input';
 import colors from '@/constants/colors';
+import { useCurrency } from '@/hooks/useCurrency';
+import { useLocations } from '@/hooks/useLocations';
 import { useAppStore } from '@/store/app-store';
 import { useAuthStore } from '@/store/auth-store';
 import { useBookingStore } from '@/store/booking-store';
-import { useCurrency } from '@/hooks/useCurrency';
-import { useLocations } from '@/hooks/useLocations';
-import Button from '@/components/Button';
-import Input from '@/components/Input';
-import BusCard from '@/components/BusCard';
-import { Bus as BusType, User } from '@/app/types';
 import DateTimePicker from '@react-native-community/datetimepicker';
+import { useRouter } from 'expo-router';
+import {
+  ArrowLeftRight,
+  ArrowRight,
+  Bus,
+  Calendar,
+  MapPin,
+  RefreshCw,
+  Search,
+  Users,
+  X
+} from 'lucide-react-native';
 
 // Styles will be defined at the bottom of the file
 
@@ -171,20 +170,6 @@ export default function HomeScreen() {
     }
   };
 
-  const onRefresh = useCallback(async () => {
-    setRefreshing(true);
-    
-    // Refresh locations
-    await refreshLocations();
-    
-    // If search results are showing, refresh buses
-    if (showSearchResults) {
-      await searchBuses();
-    }
-    
-    setRefreshing(false);
-  }, [refreshLocations, searchBuses, showSearchResults]);
-
   // State for popular routes
   const [popularRoutes, setPopularRoutes] = useState<Array<{
     departure_location: string;
@@ -199,23 +184,43 @@ export default function HomeScreen() {
     try {
       setLoadingPopularRoutes(true);
       const { data, error } = await supabase
-        .from('popular_routes')
+        .from('popular_routes') // Make sure this matches your materialised view name
         .select('*')
         .order('booking_count', { ascending: false })
         .limit(5);
 
       if (error) {
-        console.error('Error fetching popular routes:', error);
-        return;
+        console.error('Error fetching popular routes:', error.message);
+        // Consider setting an error state here to display to the user
+        setPopularRoutes([]); // Set to empty or keep previous state based on UX preference
+      } else if (data) {
+        setPopularRoutes(data);
       }
-
-      setPopularRoutes(data || []);
-    } catch (error) {
-      console.error('Error in fetchPopularRoutes:', error);
+    } catch (e: any) {
+      console.error('Exception fetching popular routes:', e.message);
+      setPopularRoutes([]);
     } finally {
       setLoadingPopularRoutes(false);
     }
   }, []);
+
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+
+    // Clear inputs and reset state
+    setFrom('');
+    setTo('');
+    setDate(new Date());
+    setPassengers(1);
+    setShowSearchResults(false); // This will also trigger featured buses to load via useEffect
+
+    // Refresh core data
+    await refreshLocations();
+    await fetchPopularRoutes(); // Fetch popular routes again
+
+    setRefreshing(false);
+  }, [refreshLocations, fetchPopularRoutes]);
+
 
   // Fetch popular routes on component mount
   useEffect(() => {
@@ -438,28 +443,7 @@ export default function HomeScreen() {
               </View>
             )}
           </View>
-  ) : (
-    <View>
-      <Text style={[styles.sectionTitle, { color: themeColors.text, marginBottom: 12 }]}>
-        Or check out these popular routes
-      </Text>
-      {loadingFeatured ? (
-        <ActivityIndicator size="large" color={themeColors.primary} />
-      ) : featuredBuses.length > 0 ? (
-        featuredBuses.map(bus => (
-          <BusCard
-            key={`featured-${bus.id}`}
-            bus={bus}
-            onPress={() => handleSelectBus(bus)}
-          />
-        ))
-      ) : (
-        <Text style={{ color: themeColors.subtext, textAlign: 'center' }}>
-          No featured routes available at the moment.
-        </Text>
-      )}
-    </View>
-  )}
+  ) : null}
         
         {/* Popular Routes Section */}
         <View style={{ marginTop: 24, marginBottom: 16 }}>
@@ -534,7 +518,7 @@ export default function HomeScreen() {
                         color: themeColors.text,
                         fontSize: 16,
                       }}>
-                        {route.departure_location.split(' ').map(word => word[0]).join('').toUpperCase()}
+                        {route.departure_location}
                       </Text>
                       <View style={{ marginHorizontal: 8 }}>
                         <ArrowRight size={16} color={themeColors.primary} />
@@ -544,7 +528,7 @@ export default function HomeScreen() {
                         color: themeColors.text,
                         fontSize: 16,
                       }}>
-                        {route.arrival_location.split(' ').map(word => word[0]).join('').toUpperCase()}
+                        {route.arrival_location}
                       </Text>
                     </View>
                     <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 8 }}>

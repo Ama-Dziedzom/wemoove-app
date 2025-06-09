@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { fetchLocations } from '@/services/api';
-import { Location } from '@/types';
+import { Location } from '@/app/types';
 
 export function useLocations() {
   const [locations, setLocations] = useState<Location[]>([]);

@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { PaymentMethod, Notification } from '@/types';
+import { PaymentMethod, Notification } from '@/app/types';
 import { 
   fetchPaymentMethods, 
   addPaymentMethod as apiAddPaymentMethod, 
@@ -10,11 +10,17 @@ import {
   markNotificationAsRead as apiMarkNotificationAsRead
 } from '@/services/api';
 
+interface NotificationSettings {
+  email: boolean;
+  sms: boolean;
+  push: boolean; // For general push notifications
+}
+
 interface AppSettings {
   theme: 'light' | 'dark';
   currency: string;
   language: string;
-  notifications: boolean;
+  notifications: NotificationSettings; // Changed from boolean
   biometricLogin: boolean;
 }
 
@@ -37,6 +43,7 @@ interface AppState {
   clearNotifications: () => void;
   refreshPaymentMethods: () => Promise<void>;
   fetchUserNotifications: (userId: string) => Promise<void>;
+  togglePushNotifications: () => void;
 }
 
 export const useAppStore = create<AppState>()(
@@ -46,7 +53,11 @@ export const useAppStore = create<AppState>()(
         theme: 'light',
         currency: 'GHS', // Changed default currency to GHS
         language: 'en',
-        notifications: true,
+        notifications: {
+          email: true,
+          sms: true,
+          push: true, // Default state for push notifications
+        },
         biometricLogin: false,
       },
       paymentMethods: [],
@@ -77,6 +88,18 @@ export const useAppStore = create<AppState>()(
           settings: {
             ...state.settings,
             theme: state.settings.theme === 'light' ? 'dark' : 'light',
+          },
+        }));
+      },
+
+      togglePushNotifications: () => {
+        set(state => ({
+          settings: {
+            ...state.settings,
+            notifications: {
+              ...state.settings.notifications,
+              push: !state.settings.notifications.push, // Toggle the 'push' property
+            },
           },
         }));
       },
